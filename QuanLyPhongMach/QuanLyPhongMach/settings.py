@@ -37,7 +37,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'qlpmapp.apps.QlpmappConfig'
 ]
+
+AUTH_USER_MODEL = 'qlpmapp.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -75,8 +78,11 @@ WSGI_APPLICATION = 'QuanLyPhongMach.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'qlpm',
+        'USER': 'root',
+        'PASSWORD': '123456',
+        'HOST': ''  # mặc định localhost
     }
 }
 
