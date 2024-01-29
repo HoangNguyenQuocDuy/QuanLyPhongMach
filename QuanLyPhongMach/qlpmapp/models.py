@@ -1,3 +1,4 @@
+from cloudinary.models import CloudinaryField
 from django.contrib.auth.models import AbstractUser, Group, Permission
 from datetime import datetime
 from django.utils import timezone
@@ -5,12 +6,11 @@ from django.db import models
 
 
 class User(AbstractUser):
-    avatar = models.ImageField(upload_to="avatars/%Y/%m", null=True, blank=False)
+    avatar = CloudinaryField('avatar', null=True)
 
 
 class CustomUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True)
-    default_group = Group.objects.get(name='Patient')
     role = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True)
     birth = models.DateField(default=timezone.now)
     gender = models.CharField(max_length=10, choices=[('male', 'Male'), ('female', 'Female')])
@@ -53,6 +53,9 @@ class Schedule(models.Model):
 class Medicine(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField()
+
+    def __str__(self):
+        return self.name
 
 
 class Appointment(models.Model):
@@ -117,10 +120,27 @@ class MedicalHistory(models.Model):
 #         return f"{self.year}-{self.quarter}-{self.month}"
 
 
-# admin_group = Group.objects.get(name='Admin')
-# doctor_group = Group.objects.get(name='Doctor')
-# nurse_group = Group.objects.get(name='Nurse')
-# patient_group = Group.objects.get(name='Patient')
+admin_group = Group.objects.get(name='Admin')
+doctor_group = Group.objects.get(name='Doctor')
+nurse_group = Group.objects.get(name='Nurse')
+patient_group = Group.objects.get(name='Patient')
+
+# user_doctor1 = User.objects.create_user(
+#     username='example_user',  # Tên đăng nhập
+#     email='example@example.com',  # Địa chỉ email
+#     password='password123',  # Mật khẩu
+#     first_name='John',  # Tên
+#     last_name='Doe'  # Họ
+# )
+# doctor1 = Doctor.objects.create(
+#     user=user_doctor1,
+#     role=doctor_group,
+#     birth='1990-01-01',
+#     gender='male',
+#     address='576 Nguyen Oanh, Go Vap, Ho Chi Minh city',
+#     active=True,
+#     speciality='Otorhinolaryngology'
+# )
 #
 # admin_group.permissions.add(
 #     # Doctor

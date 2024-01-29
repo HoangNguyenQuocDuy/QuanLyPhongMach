@@ -15,7 +15,6 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
@@ -27,7 +26,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -37,7 +35,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'qlpmapp.apps.QlpmappConfig'
+    'qlpmapp.apps.QlpmappConfig',
+    'drf_yasg',
+    'cloudinary',
+    'oauth2_provider'
 ]
 
 AUTH_USER_MODEL = 'qlpmapp.User'
@@ -51,6 +52,20 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+import cloudinary
+
+cloudinary.config(
+    cloud_name="dpc4ckhqs",
+    api_key="378389729151436",
+    api_secret="mWM7_sWVv85g_SDCWV6yZmTfz8g"
+)
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
+    )
+}
 
 ROOT_URLCONF = 'QuanLyPhongMach.urls'
 
@@ -72,7 +87,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'QuanLyPhongMach.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
@@ -82,10 +96,9 @@ DATABASES = {
         'NAME': 'qlpm',
         'USER': 'root',
         'PASSWORD': '123456',
-        'HOST': ''  # mặc định localhost
+        'HOST': ''
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -105,7 +118,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
@@ -116,7 +128,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
