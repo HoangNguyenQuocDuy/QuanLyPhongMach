@@ -65,12 +65,12 @@ class ScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Schedule
         fields = ['id', 'schedule_time', 'doctors', 'nurses', 'description']
-# class AppointmentSerializer(serializers.ModelSerializer):
-#     patient = PatientSerializer()
-#
-#     class Meta:
-#         model = Appointment
-#         fields = '__all__'
+
+
+class AppointmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Appointment
+        fields = ['id', 'patient', 'nurse', 'scheduled_time', 'created_at', 'updated_at', 'confirmed']
 
 
 # class PaymentSerializer(serializers.ModelSerializer):

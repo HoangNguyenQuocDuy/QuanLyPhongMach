@@ -75,9 +75,8 @@ class Medicine(models.Model):
 
 class Appointment(models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
-    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, blank=True)
-    nurse = models.ForeignKey(Nurse, on_delete=models.CASCADE, blank=True)
-    scheduled_time = models.DateField(default=datetime.now)
+    nurse = models.ForeignKey(Nurse, on_delete=models.CASCADE, null=True)
+    scheduled_time = models.DateTimeField(default=datetime.now)
     created_at = models.DateField(auto_now_add=True)
     updated_at = models.DateField(auto_now=True)
     confirmed = models.BooleanField(default=False)

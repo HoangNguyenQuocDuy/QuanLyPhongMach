@@ -3,11 +3,12 @@ from django.contrib.auth.models import Group
 from django.shortcuts import render
 from rest_framework import viewsets, status, permissions
 from rest_framework import generics
-from qlpmapp.models import Doctor, Nurse, Patient, Medicine, Schedule
+from qlpmapp.models import Doctor, Nurse, Patient, Medicine, Schedule, Appointment, User
 from qlpmapp.serializers import *
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from qlpmapp.perms import *
+from django.utils import timezone
 
 
 def create_user_and_profile(request, profile_type):
@@ -54,7 +55,9 @@ def create_user_and_profile(request, profile_type):
             profile.groups.add(Group.objects.get(name=profile_type))
 
             profile.save()
-            return Response({'success': f'{profile_type} created successfully'}, status=status.HTTP_201_CREATED)
+            return Response({'success': f'{profile_type} created successfully',
+                                'data': profile.data
+                             }, status=status.HTTP_201_CREATED)
         else:
             return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     else:
@@ -97,7 +100,9 @@ class MedicineViewSet(viewsets.ModelViewSet):
         serializer = MedicineSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({'success: Medicine created successfully'}, status=status.HTTP_201_CREATED)
+            return Response({'success': 'Medicine created successfully',
+                                'data': serializer.data
+                             }, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -107,64 +112,87 @@ class ScheduleViewSet(viewsets.ModelViewSet):
     serializer_class = ScheduleSerializer
     permission_classes = [IsAuthenticated, AdminPermissions]
 
-# class AdminViewSet(viewsets.ViewSet):
-#
-#     def get_permissions(self):
-#         permission_classes = [permissions.IsAdminUser]
-#         return [permission() for permission in permission_classes]
-#
-#     def list_doctors(self, request):
-#         queryset = Doctor.objects.all()
-#         serializer = DoctorSerializer(queryset, many=True)
-#         return Response(serializer.data)
-#
-#     def create_doctor(self, request):
-#         serializer = DoctorSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-#
-#     def update_doctor(self, request, pk=None):
-#         doctor = Doctor.objects.get(pk=pk)
-#         serializer = DoctorSerializer(doctor, data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-#
-#     def delete_doctor(self, request, pk=None):
-#         doctor = Doctor.objects.get(pk=pk)
-#         doctor.delete()
-#         return Response(status=status.HTTP_204_NO_CONTENT)
-#
-#     # Tương tự cho Nurse, Medicine, Schedule
-#
-#     def list_nurses(self, request):
-#         queryset = Nurse.objects.all()
-#         serializer = NurseSerializer(queryset, many=True)
-#         return Response(serializer.data)
-#
-#     def create_nurse(self, request):
-#         serializer = NurseSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-#
-#     # Các phương thức khác tương tự cho bác sĩ, y tá, lịch trực, và thuốc
-#
-#     def list_patients(self, request):
-#         queryset = Patient.objects.all()
-#         serializer = PatientSerializer(queryset, many=True)
-#         return Response(serializer.data)
-#
-#     def create_patient(self, request):
-#         serializer = PatientSerializer(data=request.data)
-#         if serializer.is_valid():
-#             serializer.save()
-#             return Response(serializer.data, status=status.HTTP_201_CREATED)
-#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-#
-#     # Các phương thức khác tương tự cho bệnh nhân
+
+class AppointmentViewSet(viewsets.ViewSet, generics.CreateAPIView,
+                         generics.UpdateAPIView, generics.DestroyAPIView,
+                         generics.ListAPIView, generics.RetrieveAPIView):
+    queryset = Appointment.objects.all()
+    serializer_class = AppointmentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        if not (PatientPermissions().has_permission(request, self)):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        today = timezone.now().date()
+        total_appointments_today = Appointment.objects.filter(scheduled_time__date=today).count()
+        if total_appointments_today >= 100:
+            return Response({'error': 'Maximum appointments for today exceeded'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer_data = {
+            'scheduled_time': request.data['scheduled_time'],
+            'patient': Patient.objects.get(user=request.user).id
+        }
+        print('patient: ', Patient.objects.get(user=request.user).id)
+
+        serializer = AppointmentSerializer(data=serializer_data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({'success': 'Appointment created successfully',
+                             'data': serializer.data
+                             }, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def update(self, request, *args, **kwargs):
+        if not (NursePermissions().has_permission(request, self)):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        instance = self.get_object()
+        serializer = self.serializer_class(instance, data=request.data, partial=True)
+        if serializer.is_valid():
+            nurse = Nurse.objects.get(user=request.user)
+
+            serializer.validated_data['nurse'] = nurse
+            serializer.save()
+
+            # Gửi email
+            # ...
+
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def destroy(self, request, *args, **kwargs):
+        if not (PatientPermissions().has_permission(request, self)):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        instance = self.get_object()
+        user = request.user
+
+        if instance.patient.user != user:
+            return Response({'error': 'You are not authorized to delete this appointment'},
+                            status=status.HTTP_403_FORBIDDEN)
+
+        instance.delete()
+        return Response({'success': 'Appointment deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+
+    def list(self, request, *args, **kwargs):
+        if not (Nurse.objects.filter(user=request.user) or Patient.objects.filter(user=request.user)):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        if Nurse.objects.filter(user=request.user):
+            queryset = Appointment.objects.filter(confirmed=False)
+        else:
+            queryset = Appointment.objects.filter(patient__user=request.user)
+
+        serializer = AppointmentSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def retrieve(self, request, *args, **kwargs):
+        if not (NursePermissions().has_permission(request, self)):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        instance = self.get_object()
+        serializer = AppointmentSerializer(instance)
+        return Response(serializer.data)
 
