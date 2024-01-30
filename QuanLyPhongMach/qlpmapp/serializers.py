@@ -1,5 +1,6 @@
+import cloudinary.uploader
 from rest_framework import serializers
-from .models import Patient, Doctor, Nurse, Medicine, Appointment, Payment, MedicalHistory, User
+from .models import Patient, Doctor, Nurse, Medicine, Schedule, Appointment, Payment, MedicalHistory, User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -19,48 +20,51 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class PatientSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source='user.username', read_only=True)
-    first_name = serializers.CharField(source='user.first_name', read_only=True)
-    last_name = serializers.CharField(source='user.last_name', read_only=True)
-    email = serializers.CharField(source='user.email', read_only=True)
-    avatar = serializers.CharField(source='user.avatar', read_only=True)
+    user = UserSerializer(read_only=True)
 
     class Meta:
         model = Patient
-        fields = ('id', 'username', 'first_name', 'last_name', 'email', 'address', 'birth', 'avatar', 'gender', 'major')
+        fields = ['id', 'user', 'address', 'birth', 'gender', 'major']
         depth = 1
 
 
 class DoctorSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source='user.username', read_only=True)
-    first_name = serializers.CharField(source='user.first_name', read_only=True)
-    last_name = serializers.CharField(source='user.last_name', read_only=True)
-    email = serializers.CharField(source='user.email', read_only=True)
-    avatar = serializers.CharField(source='user.avatar', read_only=True)
+    user = UserSerializer(read_only=True)
 
     class Meta:
         model = Doctor
-        fields = ('id', 'username', 'first_name', 'last_name', 'email', 'avatar', 'gender', 'speciality')
+        fields = ['id', 'user', 'address', 'birth', 'gender', 'speciality']
 
 
 class NurseSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source='user.username', read_only=True)
-    first_name = serializers.CharField(source='user.first_name', read_only=True)
-    last_name = serializers.CharField(source='user.last_name', read_only=True)
-    email = serializers.CharField(source='user.email', read_only=True)
-    avatar = serializers.CharField(source='user.avatar', read_only=True)
+    user = UserSerializer(read_only=True)
 
     class Meta:
         model = Nurse
-        fields = ('id', 'username', 'first_name', 'last_name', 'email', 'avatar', 'gender', 'faculty')
+        fields = ['id', 'user', 'address', 'birth', 'gender', 'faculty']
 
 
 class MedicineSerializer(serializers.ModelSerializer):
     class Meta:
         model = Medicine
-        fields = '__all__'
+        fields = ['id', 'name', 'active_substances', 'price', 'unit', 'quantity', 'description', 'image']
+
+    def create(self, validated_data):
+        image_url = None
+        if 'image' in validated_data:
+            uploaded_image = validated_data['image']
+            cloudinary_folder = "Clinic"
+            upload_result = cloudinary.uploader.upload(uploaded_image, folder=cloudinary_folder)
+            image_url = upload_result.get('secure_url')
+
+        validated_data['image'] = image_url
+        return super().create(validated_data)
 
 
+class ScheduleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Schedule
+        fields = ['id', 'schedule_time', 'doctors', 'nurses', 'description']
 # class AppointmentSerializer(serializers.ModelSerializer):
 #     patient = PatientSerializer()
 #

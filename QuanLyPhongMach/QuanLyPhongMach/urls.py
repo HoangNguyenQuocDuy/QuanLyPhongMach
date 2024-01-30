@@ -48,5 +48,5 @@ urlpatterns = [
             name='schema-redoc'),
 ]
 
-# Client ID: q1NHRxrBNoH3RjjG26eWKaVXrbdG7Dlppq37VPzB
-# Client Secret: pbkdf2_sha256$600000$5X3RGMZ1UaR1kFjZZt8MQa$gajbhhYc5fQhGAT0MjohWmZ94Kvdtoi7qjjvQXYsD9Q=
+# Client ID: WIXe9P1gMJs3euUDVtpOkpfxuhUv0D7dvNX6Bscl
+# Client Secret: meYnTpYnrFNGpkdxJTmrYCnOr2SQAxU6ZJ8HyPq0qDJ8BF0P93kHKzjJfkvDZ8XOVCXHquNomBb7J4zmWFNlIXadCaTCvfJthbznxdRz35kks77tCGmbsmqcqfxDAz1j
