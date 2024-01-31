@@ -1,5 +1,6 @@
 import cloudinary.uploader
 from django.contrib.auth.models import Group
+from django.core.mail import send_mail
 from django.shortcuts import render
 from rest_framework import viewsets, status, permissions
 from rest_framework import generics
@@ -9,6 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from qlpmapp.perms import *
 from django.utils import timezone
+from QuanLyPhongMach import settings
 
 
 def create_user_and_profile(request, profile_type):
@@ -55,9 +57,7 @@ def create_user_and_profile(request, profile_type):
             profile.groups.add(Group.objects.get(name=profile_type))
 
             profile.save()
-            return Response({'success': f'{profile_type} created successfully',
-                                'data': profile.data
-                             }, status=status.HTTP_201_CREATED)
+            return Response({'success': f'{profile_type} created successfully'}, status=status.HTTP_201_CREATED)
         else:
             return Response(user_serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     else:
@@ -157,7 +157,12 @@ class AppointmentViewSet(viewsets.ViewSet, generics.CreateAPIView,
             serializer.save()
 
             # Gửi email
-            # ...
+            subject = 'DC CLINIC - APPOINTMENT CONFIRMATION'
+            message = f"Your appointment at {instance.scheduled_time} has been confirmed."
+            from_email = settings.EMAIL_HOST_USER
+            to_email = instance.patient.user.email
+
+            send_mail(subject, message, from_email, [to_email], fail_silently=True)
 
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
