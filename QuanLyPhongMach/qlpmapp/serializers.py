@@ -1,6 +1,6 @@
 import cloudinary.uploader
 from rest_framework import serializers
-from .models import Patient, Doctor, Nurse, Medicine, Schedule, Appointment, Payment, MedicalHistory, User
+from .models import Patient, Doctor, Nurse, Medicine, Schedule, Appointment, Payment, MedicalHistory, User, Prescription, PrescribedMedicine
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -47,7 +47,8 @@ class NurseSerializer(serializers.ModelSerializer):
 class MedicineSerializer(serializers.ModelSerializer):
     class Meta:
         model = Medicine
-        fields = ['id', 'name', 'active_substances', 'price', 'unit', 'quantity', 'description', 'image']
+        fields = ['id', 'name', 'active_substances', 'price', 'unit', 'quantity',
+                  'description', 'image', 'dosage', 'instructions', 'usage_instructions']
 
     def create(self, validated_data):
         image_url = None
@@ -73,6 +74,18 @@ class AppointmentSerializer(serializers.ModelSerializer):
         fields = ['id', 'patient', 'nurse', 'scheduled_time', 'created_at', 'updated_at', 'confirmed']
 
 
+class PrescribedMedicineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PrescribedMedicine
+        fields = '__all__'
+
+
+class PrescriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Prescription
+        fields = ['id', 'doctor', 'patient', 'symptoms', 'conclusion', 'prescribed_medicines']
+
+
 # class PaymentSerializer(serializers.ModelSerializer):
 #     patient = PatientSerializer()
 #
@@ -81,11 +94,11 @@ class AppointmentSerializer(serializers.ModelSerializer):
 #         fields = '__all__'
 
 
-# class MedicalHistorySerializer(serializers.ModelSerializer):
-#     patient = PatientSerializer()
-#     doctor = DoctorSerializer()
-#     prescribed_medicines = MedicineSerializer(many=True)
-#
-#     class Meta:
-#         model = MedicalHistory
-#         fields = '__all__'
+class MedicalHistorySerializer(serializers.ModelSerializer):
+    patient = PatientSerializer()
+    doctor = DoctorSerializer()
+    prescribed_medicines = PrescribedMedicineSerializer(many=True)
+
+    class Meta:
+        model = MedicalHistory
+        fields = '__all__'

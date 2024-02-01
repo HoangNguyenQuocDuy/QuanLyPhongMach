@@ -66,6 +66,9 @@ class Medicine(models.Model):
     quantity = models.PositiveIntegerField(default=0)
     description = models.TextField(default='')
     image = CloudinaryField('medicine', null=True)
+    dosage = models.CharField(max_length=50, null=True, blank=True)
+    instructions = models.CharField(max_length=50, default='Drink')
+    usage_instructions = models.CharField(max_length=100, default='')
     created_at = models.DateField(auto_now_add=True, null=True)
     updated_at = models.DateField(auto_now=True)
 
@@ -75,6 +78,7 @@ class Medicine(models.Model):
 
 class Appointment(models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, null=True)
     nurse = models.ForeignKey(Nurse, on_delete=models.CASCADE, null=True)
     scheduled_time = models.DateTimeField(default=datetime.now)
     created_at = models.DateField(auto_now_add=True)
@@ -95,6 +99,8 @@ class Prescription(models.Model):
     symptoms = models.TextField()
     conclusion = models.TextField()
     prescribed_medicines = models.ManyToManyField(Medicine, through='PrescribedMedicine')
+    created_at = models.DateField(auto_now_add=True, null=True)
+    updated_at = models.DateField(auto_now=True)
 
     def __str__(self):
         return f"Prescription for {self.patient.name} by Dr. {self.doctor.name}"
@@ -103,19 +109,21 @@ class Prescription(models.Model):
 class PrescribedMedicine(models.Model):
     prescription = models.ForeignKey(Prescription, on_delete=models.CASCADE)
     medicine = models.ForeignKey(Medicine, on_delete=models.CASCADE)
-    dosage = models.CharField(max_length=50, null=True, blank=True)
-    instructions = models.TextField(null=True, blank=True)
+    instructions = models.CharField(max_length=50, default='Drink')
+    usage_instructions = models.CharField(max_length=50, default='')
+    quantity = models.PositiveIntegerField(default=0)
+    days = models.PositiveIntegerField(default=0)
 
     def __str__(self):
-        return f"{self.medicine.name} - Dosage: {self.dosage}"
+        return f"{self.medicine.name} - Days: {self.days} - Quantity: {self.quantity}"
 
 
 class MedicalHistory(models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='medical_history_doctor')
     symptoms = models.TextField()
-    diagnosis = models.TextField()
-    prescribed_medicines = models.ManyToManyField(Medicine, related_name='prescribed_medicines')
+    conclusion = models.TextField()
+    prescribed_medicines = models.ManyToManyField(PrescribedMedicine, related_name='prescribed_medicines')
     appointment = models.OneToOneField(Appointment, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 

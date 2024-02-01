@@ -4,7 +4,8 @@ from django.core.mail import send_mail
 from django.shortcuts import render
 from rest_framework import viewsets, status, permissions
 from rest_framework import generics
-from qlpmapp.models import Doctor, Nurse, Patient, Medicine, Schedule, Appointment, User
+from qlpmapp.models import Doctor, Nurse, Patient, Medicine, Schedule, Appointment, User, Prescription, \
+    PrescribedMedicine
 from qlpmapp.serializers import *
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -101,7 +102,7 @@ class MedicineViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             serializer.save()
             return Response({'success': 'Medicine created successfully',
-                                'data': serializer.data
+                             'data': serializer.data
                              }, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -201,3 +202,83 @@ class AppointmentViewSet(viewsets.ViewSet, generics.CreateAPIView,
         serializer = AppointmentSerializer(instance)
         return Response(serializer.data)
 
+
+class PrescriptionViewSet(viewsets.ViewSet, generics.CreateAPIView):
+    queryset = Prescription.objects.all()
+    serializer_class = PrescriptionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        if not (DoctorPermissions().has_permission(request, self)):
+            return Response({'error': 'Permission denied'}, status=status.HTTP_403_FORBIDDEN)
+
+        doctor = request.user.doctor
+        patient_id = request.data['patient']
+        symptoms = request.data['symptoms']
+        conclusion = request.data['conclusion']
+        prescribed_medicines = request.data['prescribed_medicines']
+
+        appointment = Appointment.objects.get(pk=request.data['appointment'])
+        if appointment.doctor is not None:
+            return Response({'error': 'Doctor already assigned to this appointment'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        prescription = Prescription.objects.create(doctor=doctor, patient_id=patient_id, symptoms=symptoms,
+                                                   conclusion=conclusion)
+
+        medical_history = MedicalHistory.objects.create(
+            patient_id=patient_id,
+            doctor=doctor,
+            appointment=appointment,
+            symptoms=symptoms,
+            conclusion=conclusion,
+        )
+
+        for medicine_data in prescribed_medicines:
+            medicine_id = medicine_data['medicine']
+
+            try:
+                medicine = Medicine.objects.get(id=medicine_id)
+            except Medicine.DoesNotExist:
+                return Response({'error': f'Medicine with ID {medicine_id} does not exist'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            instructions = medicine_data.get('instructions', medicine.instructions)
+            usage_instructions = medicine_data.get('usage_instructions', medicine.usage_instructions)
+            quantity = medicine_data['quantity']
+            days = medicine_data['days']
+
+            prescribed_medicine = PrescribedMedicine.objects.create(
+                prescription=prescription,
+                medicine=medicine,
+                instructions=instructions,
+                quantity=quantity,
+                days=days,
+                usage_instructions=usage_instructions
+            )
+            medical_history.prescribed_medicines.add(prescribed_medicine)
+
+        appointment.doctor = doctor
+        appointment.save()
+
+        serializer = PrescriptionSerializer(prescription)
+        return Response({'success': 'Prescription created successfully',
+                         'data': serializer.data
+                         }, status=status.HTTP_201_CREATED)
+
+
+class MedicalHistoryViewSet(viewsets.ViewSet, generics.ListAPIView):
+    queryset = Prescription.objects.all()
+    serializer_class = MedicalHistorySerializer
+    permission_classes = [IsAuthenticated, DoctorPermissions]
+
+    def list(self, request, *args, **kwargs):
+        patient_id = request.query_params.get('p_id', None)
+
+        if patient_id is None:
+            return Response({'error': 'Parameter "p_id" is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        medical_history = MedicalHistory.objects.filter(patient_id=patient_id)
+
+        serializer = MedicalHistorySerializer(medical_history, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
