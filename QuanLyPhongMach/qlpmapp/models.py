@@ -7,6 +7,7 @@ from django.db import models
 
 class User(AbstractUser):
     avatar = CloudinaryField('avatar', null=True)
+    reset_password_token = models.CharField(max_length=100, blank=True, null=True)
 
 
 class CustomUser(models.Model):
@@ -81,6 +82,8 @@ class Appointment(models.Model):
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, null=True)
     nurse = models.ForeignKey(Nurse, on_delete=models.CASCADE, null=True)
     scheduled_time = models.DateTimeField(default=datetime.now)
+    examination = models.BooleanField(default=False)
+    reason = models.TextField(default='')
     created_at = models.DateField(auto_now_add=True)
     updated_at = models.DateField(auto_now=True)
     confirmed = models.BooleanField(default=False)
@@ -88,9 +91,13 @@ class Appointment(models.Model):
 
 class Payment(models.Model):
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE)
+    nurse = models.ForeignKey(Nurse, on_delete=models.CASCADE, null=True)
     prescription = models.OneToOneField('Prescription', on_delete=models.CASCADE)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    fee = models.DecimalField(max_digits=10, decimal_places=2)
+    total = models.DecimalField(max_digits=10, decimal_places=2, null=True)
     payment_method = models.CharField(max_length=50)
+    created_at = models.DateField(auto_now_add=True, null=True)
+    updated_at = models.DateField(auto_now=True)
 
 
 class Prescription(models.Model):
@@ -99,11 +106,9 @@ class Prescription(models.Model):
     symptoms = models.TextField()
     conclusion = models.TextField()
     prescribed_medicines = models.ManyToManyField(Medicine, through='PrescribedMedicine')
+    appointment = models.OneToOneField(Appointment, on_delete=models.CASCADE, null=True)
     created_at = models.DateField(auto_now_add=True, null=True)
     updated_at = models.DateField(auto_now=True)
-
-    def __str__(self):
-        return f"Prescription for {self.patient.name} by Dr. {self.doctor.name}"
 
 
 class PrescribedMedicine(models.Model):
@@ -128,18 +133,18 @@ class MedicalHistory(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
-# class Statistics(models.Model):
-#     month = models.PositiveIntegerField()
-#     quarter = models.PositiveIntegerField()
-#     year = models.PositiveIntegerField()
-#     patient_count = models.PositiveIntegerField(default=0)
-#     revenue = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
-#
-#     class Meta:
-#         unique_together = ['month', 'quarter', 'year']
-#
-#     def __str__(self):
-#         return f"{self.year}-{self.quarter}-{self.month}"
+class Statistics(models.Model):
+    month = models.PositiveIntegerField()
+    quarter = models.PositiveIntegerField()
+    year = models.PositiveIntegerField()
+    patient_count = models.PositiveIntegerField(default=0)
+    revenue = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
+
+    class Meta:
+        unique_together = ['month', 'quarter', 'year']
+
+    def __str__(self):
+        return f"{self.year}-{self.quarter}-{self.month}"
 
 
 admin_group = Group.objects.get(name='Admin')

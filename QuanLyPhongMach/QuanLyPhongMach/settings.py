@@ -32,7 +32,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'quocduy6114@gmail.com'
 EMAIL_HOST_PASSWORD = 'sdtp ahlt xkzk ptyh'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -46,7 +46,8 @@ INSTALLED_APPS = [
     'qlpmapp.apps.QlpmappConfig',
     'drf_yasg',
     'cloudinary',
-    'oauth2_provider'
+    'oauth2_provider',
+    'corsheaders'
 ]
 
 AUTH_USER_MODEL = 'qlpmapp.User'
@@ -59,7 +60,10 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware'
 ]
+
+CORS_ALLOW_ALL_ORIGINS = True
 
 import cloudinary
 
@@ -72,7 +76,10 @@ cloudinary.config(
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
-    )
+    ),
+    'DEFAULT_PAGINATION_CLASS':
+    'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 4
 }
 
 ROOT_URLCONF = 'QuanLyPhongMach.urls'
